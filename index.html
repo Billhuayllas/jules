@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Consulta Repuestos v12.14 - Integración Completa</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" integrity="sha512-KfkfwYDsLkIlwQp6LFnl8zNdLGxu9YAA1QvwINks4PhcElQSvqcyVLLD9aMhXd13uQjoXtEKNosOWaZqXgel0g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header"><i class="fas fa-cogs"></i> Repuestos Sys</div>
+        <ul class="menu">
+            <li class="menu-item">
+                <span ><i class="fas fa-boxes-stacked fa-fw"></i> Productos <span class="toggle-icon fas fa-chevron-down"></span></span>
+                <ul class="submenu" id="productosSubmenu">
+                    <li><a href="#" class="submenu-item" id="menuProductos"><i class="fa fa-th-large fa-fw"></i> Catálogo Grid</a></li>
+                    <li><a href="#" class="submenu-item" id="menuTablaPrecios"><i class="fa fa-table fa-fw"></i> Tabla Precios</a></li>
+                    <li><a href="#" class="submenu-item" id="menuJuegos"><i class="fa fa-cubes fa-fw"></i> Juegos Productos</a></li>
+                </ul>
+            </li>
+             <li class="menu-item">
+                <a href="#" class="top-level-link" id="menuPagosPendientes"><i class="fas fa-file-invoice-dollar fa-fw"></i> Pagos Pendientes</a>
+            </li>
+             <li class="menu-item">
+                <a href="#" class="top-level-link" id="menuRendicionCaja"><i class="fas fa-cash-register fa-fw"></i> Rendición Caja</a>
+            </li>
+            <li class="menu-item">
+                <span ><i class="fas fa-cog fa-fw"></i> Configuración <span class="toggle-icon fas fa-chevron-down"></span></span>
+                <ul class="submenu" id="configSubmenu">
+                    <li><a href="#" class="submenu-item" id="menuSeriesTable"><i class="fa fa-tags fa-fw"></i> Series (Tabla)</a></li>
+                    <li><a href="#" class="submenu-item" id="menuCategoriesTable"><i class="fa fa-folder fa-fw"></i> Categorías (Tabla)</a></li>
+                    <li><a href="#" class="submenu-item" id="menuMarcasTable"><i class="fa fa-copyright fa-fw"></i> Marcas (Tabla)</a></li>
+                </ul>
+            </li>
+            <li class="menu-item">
+                <a href="#" class="top-level-link" id="menuBackupGeneral"><i class="fas fa-save fa-fw"></i> Backup General</a>
+            </li>
+            <li class="menu-item disabled"><span title="Próximamente"><i class="fas fa-users fa-fw"></i> Terceros</span></li>
+            <li class="menu-item disabled"><span title="Próximamente"><i class="fas fa-shopping-cart fa-fw"></i> Compras</span></li>
+        </ul>
+        <div class="sidebar-footer"><button type="button" class="btn-danger" style="width: 100%;" id="clearDataBtn" title="Borrar todos los datos guardados"><i class="fas fa-exclamation-triangle"></i> Borrar Datos</button></div>
+    </div>
+
+    <div class="main-content">
+        <div class="content-wrapper active" id="productosView">
+            <h2 class="section-header">Catálogo Productos</h2>
+            <div class="controls-container">
+                <div class="button-group">
+                    <label for="importFile" class="button-like-label btn-excel" title="Importar .xlsx"><i class="fas fa-file-excel"></i> Importar</label>
+                    <input type="file" id="importFile" accept=".xlsx, .xls" class="visually-hidden">
+                    <button type="button" class="btn-excel" id="exportExcel" title="Exportar .xlsx"><i class="fas fa-file-export"></i> Exportar</button>
+                </div>
+                <div class="form-group" style="max-width: 250px; margin-bottom:0;">
+                    <label for="filtroPertenenciaJuego" class="visually-hidden">Filtrar por Juego:</label>
+                    <select id="filtroPertenenciaJuego" class="form-select form-select-sm" style="padding: 0.4rem 0.75rem; font-size:0.9rem; height: calc(1.5em + 0.8rem + 2px);">
+                        <option value="todos">Todos los Productos</option>
+                        <option value="en_juego">Solo en Juegos</option>
+                        <option value="no_en_juego">No en Juegos</option>
+                    </select>
+                </div>
+                <button type="button" class="btn-primary" id="addProductoBtn"><i class="fas fa-plus"></i> Agregar Producto</button>
+            </div>
+            <div class="search-container form-group">
+                <label for="searchInput" class="visually-hidden">Buscar Productos</label>
+                <input type="search" id="searchInput" placeholder="Buscar en Catálogo (código, nombre, marca, etc)...">
+                <i class="fas fa-search search-icon"></i>
+            </div>
+            <div class="product-grid" id="productGrid"></div>
+            <div class="empty-state productos" id="productGridEmptyState" style="display: none;"></div>
+        </div>
+
+        <div class="content-wrapper" id="priceTableView">
+            <h2 class="section-header">Tabla de Precios</h2>
+            <div class="table-search-container form-group">
+                 <label for="priceTableSearchInput" class="visually-hidden">Buscar en Tabla</label>
+                 <input type="search" id="priceTableSearchInput" placeholder="Buscar en tabla (código, nombre, marca, serie, medida...).">
+                 <i class="fas fa-search search-icon"></i>
+            </div>
+            <div class="table-container">
+                <table class="data-table" id="priceTable">
+                    <thead><tr><th>Código</th><th>Nombre</th><th>Marca</th><th>Serie</th><th>Medida</th><th>Precio Vta (S/)</th><th>Precio Mayor (S/)</th><th>Costo (S/)</th><th>Costo FOB ($)</th><th>Stock</th><th>Acciones</th></tr></thead>
+                    <tbody id="priceTableBody"></tbody>
+                 </table>
+                 <div class="empty-state productos" id="priceTableEmptyStateWrapper" style="display: none;">
+                    <table id="priceTableEmptyStatePlaceholder" style="width:100%"><tbody><tr class="empty-state productos" id="priceTableEmptyState"><td colspan="11"></td></tr></tbody></table>
+                 </div>
+             </div>
+        </div>
+
+        <div class="content-wrapper" id="juegosView">
+             <h2 class="section-header">Juegos de Productos</h2>
+             <div class="add-button-container controls-container"><div></div><button type="button" class="btn-primary" id="addJuegoBtn"><i class="fas fa-plus"></i> Agregar Juego</button></div>
+             <div class="table-container">
+                <table class="data-table" id="juegosTable">
+                    <thead><tr><th>Código</th><th>Nombre</th><th># Aplic.</th><th># Tipos Prod.</th><th>Acciones</th></tr></thead>
+                    <tbody id="juegosTableBody"></tbody>
+                </table>
+                <div class="empty-state juegos" id="juegosTableEmptyStateWrapper" style="display: none;">
+                    <table id="juegosTableEmptyStatePlaceholder" style="width:100%"><tbody><tr class="empty-state juegos" id="juegosTableEmptyState"><td colspan="5"></td></tr></tbody></table>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-wrapper" id="pagosPendientesView">
+            <h1>SISTEMA DE PENDIENTES DE PAGO</h1>
+            <div class="tabs">
+              <div class="tab active" id="pagos-tab-pendientes">Pendientes</div>
+              <div class="tab" id="pagos-tab-historial">Historial</div>
+            </div>
+            <div id="pagos-pendientes-content">
+              <div class="form-group">
+                <label for="pagos-fecha">FECHA:</label>
+                <input type="date" id="pagos-fecha" required>
+              </div>
+              <div class="form-group">
+                <label for="pagos-nombre">NOMBRE:</label>
+                <input type="text" id="pagos-nombre" placeholder="Ingrese nombre" required>
+              </div>
+              <div class="form-group">
+                <label for="pagos-descripcion">DESCRIPCIÓN:</label>
+                <textarea id="pagos-descripcion" placeholder="Ingrese descripción" required></textarea>
+              </div>
+              <div class="form-group">
+                <label for="pagos-total">TOTAL:</label>
+                <input type="number" id="pagos-total" placeholder="0.00" step="0.01" required>
+              </div>
+              <button id="pagos-btn-agregar" class="btn-pagos-primary">Agregar</button>
+              <div class="search-container">
+                <label for="pagos-buscar">Buscar registros pendientes:</label>
+                <input type="search" id="pagos-buscar" placeholder="Buscar por nombre, fecha o descripción">
+              </div>
+              <div class="table-container" id="pagos-table-pendientes-container">
+                <table id="pagos-tabla-pendientes">
+                  <thead>
+                    <tr>
+                      <th>FECHA</th>
+                      <th>NOMBRE</th>
+                      <th>DESCRIPCIÓN</th>
+                      <th>TOTAL</th>
+                      <th class="pagos-acciones-col">ACCIONES</th>
+                    </tr>
+                  </thead>
+                  <tbody id="pagos-pendientes-body"></tbody>
+                  <tfoot>
+                    <tr class="total-row">
+                      <td colspan="3" style="text-align: right;">TOTAL PENDIENTE:</td>
+                      <td id="pagos-suma-total" style="text-align: right;">0.00</td>
+                      <td class="pagos-acciones-col"></td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+              <div class="info-message">
+                Los datos se guardan automáticamente en el almacenamiento local del navegador.
+              </div>
+              <div class="button-group-pagos">
+                <button id="pagos-exportar-json" class="btn-pagos-export">Exportar JSON (Solo Pagos)</button>
+                <button id="pagos-exportar-excel" class="btn-pagos-export">Exportar CSV (Solo Pagos)</button>
+                <button id="pagos-importar-json" class="btn-pagos-import">Importar JSON (Solo Pagos)</button>
+                <button id="pagos-importar-excel" class="btn-pagos-import">Importar CSV (Solo Pagos)</button>
+                <button id="pagos-limpiar-datos" class="btn-pagos-danger">Limpiar Datos Pagos</button>
+                <button id="pagos-descargar-busqueda" class="btn-pagos-export">Descargar Tabla Pagos</button>
+              </div>
+            </div>
+            <div id="pagos-historial-content" style="display: none;">
+              <h2 class="section-header" style="font-size: 1.4rem; margin-bottom: 1rem; border: none;">Historial de Pagos</h2>
+              <div class="search-container">
+                <label for="pagos-buscar-historial">Buscar en historial:</label>
+                <input type="search" id="pagos-buscar-historial" placeholder="Buscar por nombre, fecha o descripción">
+              </div>
+              <div class="table-container" id="pagos-table-historial-container">
+                <table id="pagos-tabla-historial">
+                  <thead>
+                    <tr>
+                      <th>FECHA PAGO</th>
+                      <th>FECHA REGISTRO</th>
+                      <th>NOMBRE</th>
+                      <th>DESCRIPCIÓN</th>
+                      <th>TOTAL</th>
+                    </tr>
+                  </thead>
+                  <tbody id="pagos-historial-body"></tbody>
+                  <tfoot>
+                    <tr class="total-row">
+                      <td colspan="4" style="text-align: right;">TOTAL PAGADO:</td>
+                      <td id="pagos-suma-total-historial" style="text-align: right;">0.00</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+              <div class="info-message">
+                El historial muestra todos los pagos completados.
+              </div>
+              <div class="button-group-pagos">
+                <button id="pagos-exportar-historial-json" class="btn-pagos-export">Exportar Historial JSON</button>
+                <button id="pagos-exportar-historial-excel" class="btn-pagos-export">Exportar Historial CSV</button>
+              </div>
+            </div>
+        </div>
+
+        <div class="content-wrapper" id="rendicionCajaView">
+            <h1 class="section-header">Rendición de Caja y Bancos</h1>
+            <div class="section">
+              <h2 id="caja-form-title">Agregar Nuevo Movimiento</h2>
+              <div class="form-grid">
+                <div class="form-group">
+                    <label for="fechaMovimiento">Fecha:</label>
+                    <input type="date" id="fechaMovimiento">
+                </div>
+                <div class="form-group">
+                  <label for="cuenta">Cuenta:</label>
+                  <select id="cuenta">
+                    <option value="Caja">Caja</option>
+                    <option value="CuentaBancaria">Cuenta Bancaria</option>
+                    <option value="General">General</option>
+                  </select>
+                </div>
+                <div class="form-group" id="banco-container" style="display: none;">
+                  <label for="banco">Banco:</label>
+                  <select id="banco">
+                    <option value="BCP">BCP</option>
+                    <option value="YAPE">YAPE</option>
+                    <option value="PLIN">PLIN</option>
+                    <option value="BBVA">BBVA</option>
+                    <option value="OTRO">OTRO</option>
+                  </select>
+                </div>
+                 <div class="form-group">
+                  <label for="tipo">Tipo:</label>
+                  <select id="tipo">
+                    <option value="Ingreso">Ingreso</option>
+                    <option value="Salida">Salida</option>
+                  </select>
+                </div>
+                 <div class="form-group">
+                  <label for="monto">Monto:</label>
+                  <input type="number" id="monto" placeholder="0.00" step="0.01">
+                </div>
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label for="desc">Descripción:</label>
+                    <input type="text" id="desc" placeholder="Ej: Saldo inicial, Pago proveedor...">
+                </div>
+              </div>
+              <button id="caja-btn-agregar" class="btn-primary" style="background-color: var(--caja-success-color);">Agregar Movimiento</button>
+              <button id="caja-btn-cancelar" class="btn-secondary" style="display: none; margin-left: 10px;">Cancelar Edición</button>
+            </div>
+
+            <div class="section">
+                <h2>Movimientos Actuales</h2>
+                <div class="form-group" style="max-width: 300px; margin-bottom: 20px;">
+                  <label for="verCuenta">Ver cuenta:</label>
+                  <select id="verCuenta">
+                    <option value="Caja">Caja</option>
+                    <option value="CuentaBancaria">Cuenta Bancaria</option>
+                    <option value="General">General</option>
+                  </select>
+                </div>
+                <div id="tabla-movimientos-container" class="table-container">
+                  <table id="movimientos-table">
+                    <thead>
+                      <tr> <th>FECHA</th> <th>DESCRIPCIÓN</th> <th>TIPO</th> <th>MONTO</th> <th>CUENTA</th> <th>BANCO</th> <th>ACCIONES</th> </tr>
+                    </thead>
+                    <tbody id="movimientos-body"></tbody>
+                    <tfoot>
+                      <tr class="total-row"> <td style="text-align:right;" colspan="3">SALDO:</td> <td id="saldo-total" style="text-align: right;">0.00</td> <td colspan="3"></td> </tr>
+                    </tfoot>
+                  </table>
+                </div>
+                <div class="button-group">
+                   <button class="btn-secondary" id="caja-descargar-movimientos">Descargar Tabla (PNG)</button>
+                </div>
+            </div>
+
+             <div class="section">
+                <h2>Acciones Generales (Caja)</h2>
+                <div class="button-group">
+                  <button class="btn-secondary" id="caja-exportar-json">Exportar Todo Caja (JSON)</button>
+                  <button class="btn-secondary" id="caja-exportar-csv">Exportar Todo Caja (CSV)</button>
+                  <button class="btn-secondary" id="caja-importar-json">Importar Caja (JSON)</button>
+                  <button class="btn-secondary" id="caja-importar-csv">Importar Caja (CSV)</button>
+                  <button class="btn-primary" id="caja-realizar-corte">Realizar Corte de Caja</button>
+                  <button class="btn-danger" id="caja-limpiar-datos">Limpiar Datos Caja</button>
+                </div>
+             </div>
+
+            <div id="reporteSection" class="section">
+              <h2>Reporte Diario (Caja + Bancos)</h2>
+              <div class="form-group" style="max-width: 300px;">
+                <label for="caja-fechaReporte">Selecciona una fecha:</label>
+                <input type="date" id="caja-fechaReporte" />
+              </div>
+              <div class="button-group" style="margin-top: 15px;">
+                 <button class="btn-primary" id="caja-buscar-reporte">Buscar Reporte</button>
+                 <button class="btn-secondary" id="caja-descargar-reporte">Descargar Reporte (PNG)</button>
+              </div>
+              <div id="caja-reporte-table-container" class="table-container" style="margin-top:20px;">
+                <table id="caja-reporte-table">
+                  <thead> <tr> <th>FECHA</th> <th>DESCRIPCIÓN</th> <th>TIPO</th> <th>MONTO</th> <th>CUENTA</th> <th>BANCO</th> </tr> </thead>
+                  <tbody id="caja-reporte-body"></tbody>
+                  <tfoot>
+                    <tr class="total-row"> <td colspan="3" style="text-align:right;">Neto Efectivo (Caja):</td> <td id="caja-neto-caja" style="text-align:right;">0.00</td> <td colspan="2"></td> </tr>
+                    <tr class="total-row"> <td colspan="3" style="text-align:right;">Neto Bancario:</td> <td id="caja-neto-bancario" style="text-align:right;">0.00</td> <td colspan="2"></td> </tr>
+                    <tr class="total-row"> <td colspan="3" style="text-align:right;">Total Neto (Global):</td> <td id="caja-neto-global" style="text-align:right;">0.00</td> <td colspan="2"></td> </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+
+            <div id="historialSection" class="section">
+              <h2>Historial Completo de Movimientos (Caja)</h2>
+               <div class="form-group" style="max-width: 300px;">
+                <label for="caja-fechaHistorial">Buscar por fecha (dejar vacío para ver todo):</label>
+                <input type="date" id="caja-fechaHistorial" />
+              </div>
+              <div class="button-group" style="margin-top: 15px;">
+                <button class="btn-primary" id="caja-buscar-historial">Buscar en Historial</button>
+                <button class="btn-secondary" id="caja-descargar-historial">Descargar Historial (PNG)</button>
+              </div>
+              <div id="caja-historial-table-container" class="table-container" style="margin-top:20px;">
+                <table id="caja-historial-table">
+                  <thead> <tr> <th>FECHA</th> <th>DESCRIPCIÓN</th> <th>TIPO</th> <th>MONTO</th> <th>CUENTA</th> <th>BANCO</th> </tr> </thead>
+                  <tbody id="caja-historial-body"></tbody>
+                </table>
+              </div>
+            </div>
+             <div class="info-message">
+              <strong>Nota:</strong> Este sistema almacena datos de caja y bancos localmente en tu navegador usando localForage.
+              Recuerda usar la sección "Backup General" para respaldar todos los datos del sistema.
+            </div>
+        </div>
+            <div class="content-wrapper" id="backupGeneralView">
+            <h2 class="section-header">Backup General del Sistema</h2>
+            <p>Esta sección permite crear y restaurar un backup completo de todos los datos del sistema (Repuestos, Pagos Pendientes y Rendición Caja).</p>
+            <p class="form-text text-warning" style="margin-bottom: 1rem;"><i class="fas fa-exclamation-triangle"></i> La restauración reemplazará TODOS los datos existentes. Asegúrese de tener una copia de seguridad si es necesario.</p>
+
+            <div class="button-group-backup" style="margin-bottom: 2rem;">
+                <button id="backup-exportar-general" class="btn-primary"><i class="fas fa-download"></i> Exportar Backup General (JSON)</button>
+                <label for="backup-importar-general-file" class="button-like-label btn-success"><i class="fas fa-upload"></i> Importar Backup General (JSON)</label>
+                <input type="file" id="backup-importar-general-file" accept=".json" class="visually-hidden">
+            </div>
+
+            <hr>
+            <h3 style="margin-top: 2rem; margin-bottom: 1rem; font-size: 1.2rem; color: var(--primary-color);">Configuración de Respaldo Automático (General)</h3>
+             <p class="form-text text-warning" style="margin-bottom: 1rem;"><i class="fas fa-exclamation-triangle"></i> Funcionalidad experimental. Requiere navegadores compatibles con File System Access API (Chrome, Edge). La carpeta seleccionada no se guarda entre sesiones por seguridad.</p>
+            <div class="form-group">
+              <label for="backup-general-folder">Carpeta de Respaldo Automático (Seleccionar cada vez):</label>
+              <input type="text" id="backup-general-folder" placeholder="Ninguna carpeta seleccionada" readonly>
+              <button id="backup-seleccionar-general-carpeta" class="btn-secondary btn-sm" style="margin-top: 5px;">Seleccionar Carpeta</button>
+            </div>
+            <div class="form-group">
+              <label for="backup-general-interval">Intervalo de Respaldo (minutos):</label>
+              <select id="backup-general-interval" class="form-select">
+                <option value="15">Cada 15 minutos</option>
+                <option value="30">Cada 30 minutos</option>
+                <option value="60" selected>Cada 1 hora</option>
+                <option value="120">Cada 2 horas</option>
+                <option value="240">Cada 4 horas</option>
+              </select>
+            </div>
+            <button id="backup-guardar-general-configuracion" class="btn-primary">Guardar Configuración e Iniciar Auto-Backup</button>
+             <div id="backup-general-status" class="form-text" style="margin-top:10px;"></div>
+        </div>
+
+        <div class="content-wrapper" id="seriesTableView">
+            <h2 class="section-header">Configuración de Series</h2><div class="add-button-container controls-container"><div></div><button type="button" class="btn-primary" id="addSeriesBtnTable"><i class="fas fa-plus"></i> Agregar Serie</button></div><div class="table-container"><table class="data-table" id="seriesTable"><thead><tr><th>ID</th><th>Código</th><th>Nombre</th><th>Color</th><th>Acciones</th></tr></thead><tbody id="seriesTableBody"></tbody></table><div class="empty-state series" id="seriesTableEmptyStateWrapper" style="display: none;"><table id="seriesTableEmptyStatePlaceholder" style="width:100%"><tbody><tr class="empty-state series" id="seriesTableEmptyState"><td colspan="5"></td></tr></tbody></table></div></div>
+        </div>
+        <div class="content-wrapper" id="categoriesTableView">
+            <h2 class="section-header">Configuración de Categorías</h2><div class="add-button-container controls-container"><div></div><button type="button" class="btn-primary" id="addCategoryBtnTable"><i class="fas fa-plus"></i> Agregar Categoría</button></div><div class="table-container"><table class="data-table" id="categoriesTable"><thead><tr><th>ID</th><th>Nombre</th><th>Acciones</th></tr></thead><tbody id="categoryTableBody"></tbody></table><div class="empty-state categorias" id="categoryTableEmptyStateWrapper" style="display: none;"><table id="categoryTableEmptyStatePlaceholder" style="width:100%"><tbody><tr class="empty-state categorias" id="categoryTableEmptyState"><td colspan="3"></td></tr></tbody></table></div></div>
+        </div>
+        <div class="content-wrapper" id="marcasView">
+            <h2 class="section-header">Configuración de Marcas</h2><div class="add-button-container controls-container"><div></div><button type="button" class="btn-primary" id="addMarcaBtnTable"><i class="fas fa-plus"></i> Agregar Marca</button></div><div class="table-container"><table class="data-table" id="marcasTable"><thead><tr><th>ID</th><th>Nombre</th><th>Acciones</th></tr></thead><tbody id="marcaTableBody"></tbody></table><div class="empty-state marcas" id="marcaTableEmptyStateWrapper" style="display: none;"><table id="marcaTableEmptyStatePlaceholder" style="width:100%"><tbody><tr class="empty-state marcas" id="marcaTableEmptyState"><td colspan="3"></td></tr></tbody></table></div></div>
+        </div>
+        <div class="content-wrapper placeholder-section" id="tercerosView"><div class="empty-state"><span class="empty-state-icon"><i class="fas fa-tools"></i></span><h2>Terceros</h2><p>No implementado.</p></div></div>
+        <div class="content-wrapper placeholder-section" id="comprasView"><div class="empty-state"><span class="empty-state-icon"><i class="fas fa-tools"></i></span><h2>Compras</h2><p>No implementado.</p></div></div>
+    </div>
+
+    <div class="modal" id="productModal" aria-labelledby="productModalLabel" aria-hidden="true" role="dialog"> <div class="modal-content"> <form id="productForm" novalidate> <div class="modal-header"> <h3 id="productModalLabel">Producto</h3> <div class="modal-header-button-group"> <button type="button" class="btn-secondary btn-sm modal-header-btn" id="modalNuevoBtn_product" data-modaltype="product" title="Crear Nuevo Producto"> <i class="fas fa-plus"></i> Nuevo </button> <button type="submit" form="productForm" class="btn-primary btn-sm modal-header-btn" title="Guardar Cambios"> <i class="fas fa-save"></i> Guardar </button> </div> <button type="button" class="close-btn" data-modal-id="productModal" aria-label="Cerrar">&times;</button> </div> <div class="modal-body" style="padding: 0;"> <ul class="nav nav-tabs" id="productTab" role="tablist"> <li class="nav-item" role="presentation"><button class="nav-link active" id="datos-tab" data-bs-target="#tabDatos" type="button" role="tab" aria-controls="tabDatos" aria-selected="true">Datos Principales</button></li> <li class="nav-item" role="presentation"><button class="nav-link" id="imagenes-tab" data-bs-target="#tabImagenes" type="button" role="tab" aria-controls="tabImagenes" aria-selected="false">Imágenes</button></li> <li class="nav-item" role="presentation"><button class="nav-link" id="aplicaciones-tab" data-bs-target="#tabAplicaciones" type="button" role="tab" aria-controls="tabAplicaciones" aria-selected="false">Aplicaciones (Legado)</button></li> </ul> <div class="tab-content" id="productTabContent" style="padding: 1.5rem;"> <div class="tab-pane active" id="tabDatos" role="tabpanel" aria-labelledby="datos-tab"> <input type="hidden" id="productId"> <div class="form-grid"> <div class="form-group"><label for="productCode">Código <span class="required">*</span></label><input type="text" id="productCode" required></div> <div class="form-group"><label for="productName">Nombre <span class="required">*</span></label><input type="text" id="productName" required></div> <div class="form-group"><label for="productBrand">Marca <span class="required">*</span></label><select id="productBrand" required><option value="" disabled selected>-- Selecciona Marca --</option></select></div> <div class="form-group"><label for="productCategory">Categoría <span class="required">*</span></label><select id="productCategory" required><option value="" disabled selected>-- Selecciona Categoría --</option></select></div> <div class="form-group"><label for="productSeries">Serie <span class="required">*</span></label><select id="productSeries" required><option value="">-- Selecciona Serie --</option></select></div> <div class="form-group"><label for="productMeasure">Medida</label><input type="text" id="productMeasure"></div> <div class="form-group"><label for="productPrice">Precio Venta (S/)</label><input type="number" id="productPrice" step="0.01" min="0"></div> <div class="form-group"><label for="productPrecioMayor">Precio Mayor (S/)</label><input type="number" id="productPrecioMayor" step="0.01" min="0"></div> <div class="form-group"><label for="productCost">Costo (S/)</label><input type="number" id="productCost" step="0.01" min="0"></div> <div class="form-group"><label for="productFOBCost">Costo FOB ($)</label><input type="number" id="productFOBCost" step="0.01" min="0"></div> <div class="form-group"><label for="productStock">Stock</label><input type="number" id="productStock" min="0"></div> </div> <div class="form-group full-width"><label for="productDescription">Descripción</label><textarea id="productDescription" rows="3"></textarea></div> </div> <div class="tab-pane" id="tabImagenes" role="tabpanel" aria-labelledby="imagenes-tab"> <p class="form-text">Adjunte hasta 5 imágenes para el producto.</p> <div class="product-images-grid"> <div class="product-image-slot"><label for="productImage">Principal</label><input type="file" id="productImage" data-preview="imagePreview" data-remove="removeProductImageBtn" accept="image/*"><div class="image-preview-wrapper"><img id="imagePreview" src="" alt="Vista previa Principal"><button type="button" id="removeProductImageBtn" data-input="productImage" data-preview="imagePreview" class="btn-remove-img" style="display: none;" title="Quitar Imagen"><i class="fas fa-times"></i></button></div></div> <div class="product-image-slot"><label for="productImage2">Adicional 2</label><input type="file" id="productImage2" data-preview="imagePreview2" data-remove="removeProductImageBtn2" accept="image/*"><div class="image-preview-wrapper"><img id="imagePreview2" src="" alt="Vista previa Adicional 2"><button type="button" id="removeProductImageBtn2" data-input="productImage2" data-preview="imagePreview2" class="btn-remove-img" style="display: none;" title="Quitar Imagen"><i class="fas fa-times"></i></button></div></div> <div class="product-image-slot"><label for="productImage3">Adicional 3</label><input type="file" id="productImage3" data-preview="imagePreview3" data-remove="removeProductImageBtn3" accept="image/*"><div class="image-preview-wrapper"><img id="imagePreview3" src="" alt="Vista previa Adicional 3"><button type="button" id="removeProductImageBtn3" data-input="productImage3" data-preview="imagePreview3" class="btn-remove-img" style="display: none;" title="Quitar Imagen"><i class="fas fa-times"></i></button></div></div> <div class="product-image-slot"><label for="productImage4">Adicional 4</label><input type="file" id="productImage4" data-preview="imagePreview4" data-remove="removeProductImageBtn4" accept="image/*"><div class="image-preview-wrapper"><img id="imagePreview4" src="" alt="Vista previa Adicional 4"><button type="button" id="removeProductImageBtn4" data-input="productImage4" data-preview="imagePreview4" class="btn-remove-img" style="display: none;" title="Quitar Imagen"><i class="fas fa-times"></i></button></div></div> <div class="product-image-slot"><label for="productImage5">Adicional 5</label><input type="file" id="productImage5" data-preview="imagePreview5" data-remove="removeProductImageBtn5" accept="image/*"><div class="image-preview-wrapper"><img id="imagePreview5" src="" alt="Vista previa Adicional 5"><button type="button" id="removeProductImageBtn5" data-input="productImage5" data-preview="imagePreview5" class="btn-remove-img" style="display: none;" title="Quitar Imagen"><i class="fas fa-times"></i></button></div></div> </div> <div class="form-text" style="grid-column: 1 / -1;">Seleccione hasta 5 imágenes.</div> </div> <div class="tab-pane" id="tabAplicaciones" role="tabpanel" aria-labelledby="aplicaciones-tab"> <p class="form-text text-warning"><i class="fas fa-exclamation-triangle"></i> Esta sección es para aplicaciones directas al producto (legado). La gestión de juegos de productos se realiza en la sección "Juegos de Productos".</p> <h4>Agregar Aplicación de Vehículo (Directa)</h4> <div class="aplicacion-form-grid"> <div class="form-group"><label for="appVehiculo">Vehículo</label><input type="text" id="appVehiculo" placeholder="Ej: Toyota Hilux 2015"></div> <div class="form-group"><label for="appMarcaVehiculo">Marca Vehículo</label><input type="text" id="appMarcaVehiculo" placeholder="Ej: Toyota"></div> <div class="form-group"><label for="appCodigoJuego">Código Juego (Info)</label><input type="text" id="appCodigoJuego" placeholder="Ej: KIT-001"></div> <div class="form-group"><label for="appNombreJuego">Nombre Juego (Info)</label><input type="text" id="appNombreJuego" placeholder="Ej: Kit Embrague"></div> </div> <button type="button" class="btn-success btn-sm" id="addAplicacionBtn" style="margin-bottom: 1rem;"><i class="fas fa-plus"></i> Agregar Aplicación (Directa)</button> <h4>Aplicaciones Directas Guardadas</h4> <ul id="aplicacionesList" class="list-group"><li class="list-group-item empty-aplicaciones" style="display: list-item; text-align: center; color: rgb(108, 117, 125);">No hay aplicaciones directas agregadas.</li></ul> </div> </div> </div> <div class="modal-footer-actions"> <span class="form-text" style="margin-right: auto;">Campos con <span class="required">*</span> son obligatorios (en la pestaña 'Datos').</span> <button type="button" class="btn-secondary" data-modal-id="productModal">Cancelar</button> </div> </form> </div> </div>
+    <div class="modal" id="seriesModal" aria-labelledby="seriesModalLabel" aria-hidden="true" role="dialog"><div class="modal-content" style="max-width: 550px;"><form id="seriesForm" novalidate><div class="modal-header"><h3 id="seriesModalLabel">Serie</h3><div class="modal-header-button-group"><button type="button" class="btn-secondary btn-sm modal-header-btn" id="modalNuevoBtn_series" data-modaltype="series" title="Crear Nueva Serie"><i class="fas fa-plus"></i> Nuevo</button><button type="submit" form="seriesForm" class="btn-primary btn-sm modal-header-btn" title="Guardar Cambios"><i class="fas fa-save"></i> Guardar</button></div><button type="button" class="close-btn" data-modal-id="seriesModal" aria-label="Cerrar">&times;</button></div><div class="modal-body"><input type="hidden" id="seriesId"><div class="form-group"><label for="seriesCode">Código <span class="required">*</span></label><input type="text" id="seriesCode" required><div class="form-text">Minúsculas, números, -, _. No editable después.</div></div><div class="form-group"><label for="seriesName">Nombre <span class="required">*</span></label><input type="text" id="seriesName" required></div><div class="form-group"><label for="seriesColor">Color <span class="required">*</span></label><input type="color" id="seriesColor" value="#3498db"></div></div><div class="modal-footer-actions"><button type="button" class="btn-secondary" data-modal-id="seriesModal">Cancelar</button></div></form></div></div>
+    <div class="modal" id="categoryModal" aria-labelledby="categoryModalLabel" aria-hidden="true" role="dialog"><div class="modal-content" style="max-width: 550px;"><form id="categoryForm" novalidate><div class="modal-header"><h3 id="categoryModalLabel">Categoría</h3><div class="modal-header-button-group"><button type="button" class="btn-secondary btn-sm modal-header-btn" id="modalNuevoBtn_category" data-modaltype="category" title="Crear Nueva Categoría"><i class="fas fa-plus"></i> Nuevo</button><button type="submit" form="categoryForm" class="btn-primary btn-sm modal-header-btn" title="Guardar Cambios"><i class="fas fa-save"></i> Guardar</button></div><button type="button" class="close-btn" data-modal-id="categoryModal" aria-label="Cerrar">&times;</button></div><div class="modal-body"><input type="hidden" id="categoryId"><div class="form-group"><label for="categoryName">Nombre <span class="required">*</span></label><input type="text" id="categoryName" required></div></div><div class="modal-footer-actions"><button type="button" class="btn-secondary" data-modal-id="categoryModal">Cancelar</button></div></form></div></div>
+    <div class="modal" id="marcaModal" aria-labelledby="marcaModalLabel" aria-hidden="true" role="dialog"><div class="modal-content" style="max-width: 550px;"><form id="marcaForm" novalidate><div class="modal-header"><h3 id="marcaModalLabel">Marca</h3><div class="modal-header-button-group"><button type="button" class="btn-secondary btn-sm modal-header-btn" id="modalNuevoBtn_marca" data-modaltype="marca" title="Crear Nueva Marca"><i class="fas fa-plus"></i> Nuevo</button><button type="submit" form="marcaForm" class="btn-primary btn-sm modal-header-btn" title="Guardar Cambios"><i class="fas fa-save"></i> Guardar</button></div><button type="button" class="close-btn" data-modal-id="marcaModal" aria-label="Cerrar">&times;</button></div><div class="modal-body"><input type="hidden" id="marcaId"><div class="form-group"><label for="marcaName">Nombre <span class="required">*</span></label><input type="text" id="marcaName" required></div></div><div class="modal-footer-actions"><button type="button" class="btn-secondary" data-modal-id="marcaModal">Cancelar</button></div></form></div></div>
+    <div class="modal" id="productDetail" aria-labelledby="detailProductNameLabel" aria-hidden="true" role="dialog"> <div class="modal-content"> <div class="modal-header"> <h3 id="detailProductNameLabel">Detalle</h3> <button type="button" class="close-btn" data-modal-id="productDetail" aria-label="Cerrar">&times;</button> </div> <div class="modal-body modal-body-grid"> <div class="product-detail-image-gallery"> <div class="main-image-container"> <img id="detailMainImage" src="" alt="Imagen Principal"> </div> <div class="thumbnail-container" id="detailThumbnailContainer"></div> </div> <div class="product-detail-info"> <h2 id="detailProductCategory">Cat</h2> <p><strong>Código:</strong> <span id="detailProductCode"></span></p> <p><strong>Marca:</strong> <span id="detailProductBrand"></span></p> <p><strong>Medida:</strong> <span id="detailProductMeasure"></span></p> <p><strong>Serie:</strong> <span id="detailProductSeries"></span></p> <p><strong>Stock:</strong> <span id="detailProductStock"></span></p> <hr> <p style="display:block;"><strong>Descripción:</strong><br><span id="detailProductDescription"></span></p> <hr> <p><strong>Precio Venta:</strong> <span id="detailProductPrice"></span></p> <p><strong>Precio Mayor (S/):</strong> <span id="detailProductPrecioMayor"></span></p> <p><strong>Costo (S/):</strong> <span id="detailProductCost"></span></p> <p><strong>Costo FOB ($):</strong> <span id="detailProductFOBCost"></span></p> <div id="detailProductAplicaciones" style="margin-top: 1rem;"></div> <div id="detailProductJuegos" style="margin-top: 1rem;"></div> </div> </div> <div class="modal-footer-actions"> <button type="button" class="btn-warning" id="editProductDetailBtn"><i class="fas fa-edit"></i> Editar</button> <button type="button" class="btn-danger" id="deleteProductDetailBtn"><i class="fas fa-trash"></i> Eliminar</button> <button type="button" class="btn-secondary" data-modal-id="productDetail" style="margin-left: auto;">Cerrar</button> </div> </div> </div>
+    <div class="modal" id="juegoModal" aria-labelledby="juegoModalLabel" aria-hidden="true" role="dialog">
+        <div class="modal-content">
+            <form id="juegoForm" novalidate>
+                <div class="modal-header">
+                    <h3 id="juegoModalLabel">Juego de Productos</h3>
+                     <div class="modal-header-button-group">
+                        <button type="button" class="btn-secondary btn-sm modal-header-btn" id="modalNuevoBtn_juego" data-modaltype="juego" title="Crear Nuevo Juego"> <i class="fas fa-plus"></i> Nuevo </button>
+                        <button type="submit" form="juegoForm" class="btn-primary btn-sm modal-header-btn" title="Guardar Cambios"> <i class="fas fa-save"></i> Guardar </button>
+                    </div>
+                    <button type="button" class="close-btn" data-modal-id="juegoModal" aria-label="Cerrar">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="section-block">
+                         <input type="hidden" id="juegoId">
+                         <div class="form-group">
+                            <label for="juegoCodigo">Código Juego <span class="required">*</span></label>
+                            <input type="text" id="juegoCodigo" required>
+                            <div class="form-text">Identificador único para el juego (Ej: KIT-001). No editable después de crear.</div>
+                        </div>
+                        <div class="form-group">
+                            <label for="juegoNombre">Nombre Juego <span class="required">*</span></label>
+                            <input type="text" id="juegoNombre" required placeholder="Ej: Kit Embrague Hilux">
+                        </div>
+                        <hr style="margin: 1.5rem 0;">
+                        <h4>Aplicaciones de Vehículo</h4>
+                        <div class="aplicacion-form-grid">
+                            <div class="form-group">
+                                <label for="juegoAppVehiculo">Vehículo</label>
+                                <input type="text" id="juegoAppVehiculo" placeholder="Ej: Toyota Hilux 2015">
+                            </div>
+                            <div class="form-group">
+                                <label for="juegoAppMarca">Marca Vehículo</label>
+                                <input type="text" id="juegoAppMarca" placeholder="Ej: Toyota">
+                            </div>
+                        </div>
+                        <button type="button" class="btn-success btn-sm" id="addJuegoAplicacionBtn" style="margin-bottom: 1rem;"><i class="fas fa-plus"></i> Agregar Aplicación</button>
+                        <h4>Aplicaciones Agregadas</h4>
+                        <ul id="juegoAplicacionesList" class="list-group">
+                             <li class="list-group-item empty-juego-aplicaciones empty-state-list-item" style="display: list-item;">No hay aplicaciones agregadas.</li>
+                        </ul>
+                    </div>
+                     <div class="section-block">
+                         <h4>Productos Incluidos</h4>
+                         <div class="add-item-section">
+                             <div class="form-group" style="flex-grow:1;">
+                                <label for="juegoProductoSelect">Seleccionar Producto</label>
+                                <select id="juegoProductoSelect" style="width:100%;">
+                                    <option value="">-- Buscar y seleccionar --</option>
+                                </select>
+                             </div>
+                             <div class="form-group" style="width: 80px; margin-bottom:0;">
+                                 <label for="juegoProductoCantidad">Cant.</label>
+                                 <input type="number" id="juegoProductoCantidad" value="1" min="1" class="form-control" style="padding: 0.5rem 0.4rem;">
+                             </div>
+                             <button type="button" class="btn-success btn-sm" id="addJuegoProductoBtn"><i class="fas fa-plus"></i> Añadir</button>
+                         </div>
+                         <h4>Productos en este Juego</h4>
+                         <ul id="juegoProductosList" class="list-group">
+                             <li class="list-group-item empty-juego-productos empty-state-list-item" style="display: list-item;">No hay productos agregados.</li>
+                         </ul>
+                         <div class="juego-totals">
+                            <h5>Totales Estimados del Juego:</h5>
+                            <p><strong>Costo Total Componentes:</strong> <span id="juegoCostoTotal">S/ 0.00</span></p>
+                            <p><strong>Precio Venta Total Componentes:</strong> <span id="juegoPrecioTotal">S/ 0.00</span></p>
+                        </div>
+                     </div>
+                </div>
+                <div class="modal-footer-actions">
+                     <span class="form-text" style="margin-right: auto;">Campos con <span class="required">*</span> son obligatorios.</span>
+                    <button type="button" class="btn-secondary" data-modal-id="juegoModal">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="imageZoomOverlay"> <button id="zoomPrevBtn" class="zoom-nav-btn" title="Anterior">&lt;</button> <div class="zoom-content"> <img id="zoomedImage" src="" alt="Imagen Ampliada"> <button class="zoom-close-btn" title="Cerrar Zoom">&times;</button> </div> <button id="zoomNextBtn" class="zoom-nav-btn" title="Siguiente">&gt;</button> </div>
+
+    <div id="loadingOverlay">
+        <i class="fas fa-spinner fa-spin spinner"></i>
+        <p id="loadingMessage">Cargando...</p>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <script src="js/utils.js"></script>
+    <script src="js/sistema-repuestos.js"></script>
+    <script src="js/sistema-pagos.js"></script>
+    <script src="js/sistema-caja.js"></script>
+    <script src="js/backup-manager.js"></script>
+    <script src="js/menu-handler.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
